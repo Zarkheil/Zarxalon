@@ -1591,124 +1591,56 @@
   </footer>
 
 <script>
-// Intersection Observer for About Section
-document.addEventListener('DOMContentLoaded', function() {
-  const aboutSection = document.querySelector('.about-section');
-  if (aboutSection) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in-view');
-        }
-      });
-    }, { threshold: 0.1 });
-    observer.observe(aboutSection);
-  }
+document.addEventListener('DOMContentLoaded', () => {
+  // About Section Animation
+  const about = document.querySelector('.about-section');
+  if (about) new IntersectionObserver(e => e[0].isIntersecting && e[0].target.classList.add('in-view'), { threshold: 0.1 }).observe(about);
 
-  // Carousel Functionality
-  const initCarousel = () => {
-    const slides = document.querySelectorAll('.service-slide');
-    const track = document.querySelector('.carousel-track');
-    const dotsContainer = document.querySelector('.carousel-dots');
-    
-    if (!slides.length || !track || !dotsContainer) return;
-
-    let currentIndex = 0;
-    
-    // Create dots
-    slides.forEach((_, index) => {
-      const dot = document.createElement('div');
-      dot.classList.add('dot');
-      if (index === 0) dot.classList.add('active');
-      dot.addEventListener('click', () => goToSlide(index));
-      dotsContainer.appendChild(dot);
+  // Carousel
+  const slides = document.querySelectorAll('.service-slide'),
+        track = document.querySelector('.carousel-track'),
+        dots = document.querySelector('.carousel-dots');
+  if (slides.length && track && dots) {
+    let current = 0;
+    slides.forEach((_, i) => {
+      const dot = Object.assign(document.createElement('div'), { className: 'dot' });
+      if (!i) dot.classList.add('active');
+      dot.onclick = () => go(i);
+      dots.append(dot);
     });
-    
-    function goToSlide(index) {
-      currentIndex = index;
-      const slide = slides[index];
-      track.scrollTo({
-        left: slide.offsetLeft - (window.innerWidth - slide.offsetWidth) / 2,
-        behavior: 'smooth'
-      });
-      updateActiveSlide(index);
-    }
-    
-    function updateActiveSlide(index) {
-      document.querySelectorAll('.dot').forEach((dot, i) => {
-        dot.classList.toggle('active', i === index);
-      });
-    }
-    
-    // Handle scroll events
-    let isScrolling;
+    const go = i => {
+      current = i;
+      track.scrollTo({ left: slides[i].offsetLeft - (innerWidth - slides[i].offsetWidth) / 2, behavior: 'smooth' });
+      [...dots.children].forEach((d, j) => d.classList.toggle('active', j === i));
+    };
     track.addEventListener('scroll', () => {
-      clearTimeout(isScrolling);
-      isScrolling = setTimeout(() => {
-        const scrollPosition = track.scrollLeft + track.offsetWidth / 2;
-        slides.forEach((slide, index) => {
-          if (slide.offsetLeft <= scrollPosition && 
-              slide.offsetLeft + slide.offsetWidth > scrollPosition) {
-            currentIndex = index;
-            updateActiveSlide(index);
-          }
-        });
+      clearTimeout(track._t);
+      track._t = setTimeout(() => {
+        const mid = track.scrollLeft + track.offsetWidth / 2;
+        slides.forEach((s, i) => s.offsetLeft <= mid && s.offsetLeft + s.offsetWidth > mid && go(i));
       }, 100);
     }, { passive: true });
-  };
-
-  initCarousel();
-
-  // Contact Form Handling
-  const contactForm = document.getElementById('contactForm');
-  if (contactForm) {
-    contactForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const submitBtn = form.querySelector('.submit-btn');
-      const btnText = document.getElementById('btnText');
-      const responseDiv = document.getElementById('formResponse');
-      
-      // Show loading state
-      submitBtn.disabled = true;
-      btnText.textContent = 'SENDING...';
-      responseDiv.style.display = 'none';
-      
-      try {
-        const response = await fetch(form.action, {
-          method: 'POST',
-          headers: { 'Accept': 'application/json' },
-          body: new FormData(form)
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-          responseDiv.innerHTML = `
-            <div class="success-message">
-              <i class="fas fa-check-circle"></i>
-              <p>Message sent! Check your email (including spam folder)</p>
-            </div>
-          `;
-          form.reset();
-        } else {
-          throw new Error(result.message || 'Delivery failed');
-        }
-      } catch (error) {
-        responseDiv.innerHTML = `
-          <div class="error-message">
-            <i class="fas fa-exclamation-triangle"></i>
-            <p>${error.message}. Please email directly to zarxalon@gmail.com</p>
-          </div>
-        `;
-      } finally {
-        responseDiv.style.display = 'block';
-        submitBtn.disabled = false;
-        btnText.textContent = 'SEND MESSAGE';
-      }
-    });
   }
+
+  // Contact Form
+  const form = document.getElementById('contactForm');
+  if (form) form.onsubmit = async e => {
+    e.preventDefault();
+    const btn = form.querySelector('.submit-btn'), txt = document.getElementById('btnText'), res = document.getElementById('formResponse');
+    btn.disabled = true; txt.textContent = 'SENDING...'; res.style.display = 'none';
+    try {
+      const r = await fetch(form.action, { method: 'POST', headers: { Accept: 'application/json' }, body: new FormData(form) });
+      const j = await r.json();
+      res.innerHTML = r.ok ? `<div class="success-message"><i class="fas fa-check-circle"></i><p>Message sent! Check your email</p></div>` :
+        `<div class="error-message"><i class="fas fa-exclamation-triangle"></i><p>${j.message || 'Delivery failed'}. Please email directly to zarxalon@gmail.com</p></div>`;
+      if (r.ok) form.reset();
+    } catch (err) {
+      res.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i><p>${err.message}. Please email directly to zarxalon@gmail.com</p></div>`;
+    } finally {
+      res.style.display = 'block'; btn.disabled = false; txt.textContent = 'SEND MESSAGE';
+    }
+  };
 });
 </script>
-</body>
+
 </html>
